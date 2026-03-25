@@ -5,7 +5,7 @@ Este archivo proporciona orientación para agentes de codificación IA que traba
 ## Descripción del Proyecto
 - **Framework**: Karate Framework 1.5.2 para pruebas de API
 - **Sistema de Construcción**: Maven 3.x con Java 17
-- **Estructura**: Organización modular por dominios (users, products, auth, common)
+- **Estructura**: Organización modular por dominios (users, products)
 - **API Bajo Prueba**: https://automationexercise.com/api_list
 
 ## Comandos de Construcción/Prueba
@@ -31,18 +31,24 @@ mvn test -Dtest=UsersRunner
 # Ejecutar pruebas con salida detallada
 mvn test -X
 
-# Generar reportes solamente (después de que las pruebas hayan corrido)
+# Generar reportes Allure (después de que las pruebas hayan corrido)
+mvn allure:report
+
+# Abrir el reporte Allure automáticamente
+mvn allure:serve
+
+# Generar reporte HTML de Surefire (alternativo)
 mvn surefire-report:report
 ```
 
 ### Ejecución de Features Individuales
 - Ejecutar desde IDE: Clic derecho en `ProductsRunner.java`, `UsersRunner.java` o `TestRunner.java` → Run/Debug
-- Los features se ejecutan por dominio (products, users, auth, common)
+- Los features se ejecutan por dominio (products, users)
 
 ## Guías de Estilo de Código
 
 ### Archivos Java
-- **Nomenclatura de paquetes**: Todo en minúsculas, basado en dominio (`users`, `products`, `auth`, `common`)
+- **Nomenclatura de paquetes**: Todo en minúsculas, basado en dominio (`users`, `products`)
 - **Nomenclatura de clases**: PascalCase, descriptiva (`ProductsRunner`, `UsersRunner`, `TestRunner`)
 - **Nomenclatura de métodos**: camelCase, basada en verbos (`testProducts`, `testUsers`, `testParallel`)
 - **Importaciones**:
@@ -84,28 +90,20 @@ mvn surefire-report:report
 ### Organización de Archivos
 ```
 src/test/java/
-├── karate-config.js              # Configuración global
-├── logback-test.xml              # Configuración de logs
-├── TestRunner.java               # Runner principal para ejecución paralela
+├── allure.properties                # Configuración de Allure
+├── karate-config.js                 # Configuración global
+├── logback-test.xml                 # Configuración de logs
+├── TestRunner.java                  # Runner principal para ejecución paralela
 │
-├── users/                        # Dominio: Usuarios
-│   ├── users.feature             # Escenarios CRUD de usuarios
-│   ├── user-data.json            # Datos de prueba
-│   └── UsersRunner.java          # Runner individual
+├── users/                           # Dominio: Usuarios
+│   ├── users.feature                # Escenarios CRUD de usuarios
+│   ├── user-data.json               # Datos de prueba
+│   └── UsersRunner.java             # Runner individual
 │
-├── products/                     # Dominio: Productos
-│   ├── products.feature          # Escenarios de listado y búsqueda
-│   ├── product-data.csv          # Datos de productos
-│   └── ProductsRunner.java       # Runner individual
-│
-├── auth/                         # Dominio: Autenticación (placeholders)
-│   ├── login.feature
-│   └── oauth-flow.feature
-│
-└── common/                       # Utilidades compartidas
-    ├── api-helpers.feature       # Funciones reutilizables
-    ├── validators.js             # Validadores JavaScript
-    └── test-data.json            # Datos comunes
+└── products/                        # Dominio: Productos
+    ├── products.feature             # Escenarios de listado y búsqueda
+    ├── product-data.csv             # Datos de productos
+    └── ProductsRunner.java          # Runner individual
 ```
 
 ## Patrones Comunes
@@ -148,5 +146,4 @@ And match response.message == 'User created!'
 - Mantener las descripciones en español para los participantes del taller
 - Todas las pruebas deben pasar antes de confirmar los cambios
 - Ejecutar `mvn clean test` para verificar el conjunto completo de pruebas
-- Los reportes HTML se generan en `target/karate-reports/` después de la ejecución de pruebas
-- Los directorios `auth/` y `common/` son placeholders para extender funcionalidades
+- Los reportes HTML se generan en `target/karate-reports/` y los resultados Allure en `target/allure-results/` después de la ejecución de pruebas

@@ -25,6 +25,7 @@ karate-taller/
 ├── src/
 │   └── test/
 │       ├── java/                    # Todos los archivos de prueba
+│       │   ├── allure.properties    # Configuración de Allure
 │       │   ├── karate-config.js     # Configuración global
 │       │   ├── logback-test.xml     # Configuración de logs
 │       │   ├── TestRunner.java      # Runner principal para ejecución paralela
@@ -34,24 +35,17 @@ karate-taller/
 │       │   │   ├── user-data.json       # Datos de prueba
 │       │   │   └── UsersRunner.java     # Runner individual
 │       │   │
-│       │   ├── products/            # Pruebas de productos
-│       │   │   ├── products.feature     # Escenarios de listado y búsqueda
-│       │   │   ├── product-data.csv     # Datos de productos
-│       │   │   └── ProductsRunner.java  # Runner individual
-│       │   │
-│       │   ├── auth/                # Componentes de autenticación (placeholders)
-│       │   │   ├── login.feature
-│       │   │   └── oauth-flow.feature
-│       │   │
-│       │   └── common/              # Utilidades compartidas
-│       │       ├── api-helpers.feature  # Funciones reutilizables
-│       │       ├── validators.js        # Validadores JavaScript
-│       │       └── test-data.json       # Datos comunes
+│       │   └── products/            # Pruebas de productos
+│       │       ├── products.feature     # Escenarios de listado y búsqueda
+│       │       ├── product-data.csv     # Datos de productos
+│       │       └── ProductsRunner.java  # Runner individual
 │       │
 │       └── resources/               # (Vacío - config movida a java/)
 │
 └── target/                          # Directorio de salida Maven
-    └── karate-reports/              # Reportes HTML generados
+    ├── karate-reports/              # Reportes HTML generados
+    ├── allure-results/              # Resultados Allure (generados automáticamente)
+    └── allure-report/               # Reporte Allure HTML (generado con mvn allure:report)
 ```
 
 ## Configuración de la API
@@ -110,10 +104,36 @@ Clic derecho en `TestRunner.java`, `ProductsRunner.java` o `UsersRunner.java` �
 
 ## Reportes
 
+### Reportes HTML de Karate
 Los reportes HTML se generan automáticamente en:
 ```
 target/karate-reports/karate-summary.html
 ```
+
+### Reportes Allure
+El proyecto está configurado con integración de Allure Report para visualización mejorada:
+
+1. **Generar resultados Allure** (se ejecuta automáticamente con `mvn test`):
+   ```
+   target/allure-results/
+   ```
+
+2. **Generar reporte HTML Allure**:
+   ```
+   mvn allure:report
+   ```
+
+3. **Abrir el reporte**:
+   ```
+   target/allure-report/index.html
+   ```
+
+4. **Alternativa: generar y abrir en un solo comando**:
+   ```
+   mvn allure:serve
+   ```
+
+Los reportes Allure incluyen detalles de pasos, attachments, tiempos de ejecución y gráficos interactivos.
 
 ## Personalización
 
