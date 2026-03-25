@@ -36,7 +36,6 @@ karate-taller/
 │       │   │   └── users/           # Pruebas de usuarios (PUT, DELETE)
 │       │   │       ├── UsersRunner.java
 │       │   │       └── user-crud.feature
-│       │   └── examples/            # Ejemplo original (puedes eliminar)
 │       └── resources/               # Recursos de configuración
 │           ├── karate-config.js     # Configuración de API y datos de prueba
 │           └── logback-test.xml     # Configuración de logs
@@ -156,3 +155,8 @@ mvn test -X           # Ejecutar con debug
 - [API AutomationExercise](https://automationexercise.com/api_list)
 - [Documentación Karate](https://karatelabs.github.io/karate/)
 - [Sintaxis Gherkin](https://karatelabs.github.io/karate/#karate-language)
+
+### Recursos de Aprendizaje para el Taller
+
+- **Repositorio oficial de Karate**: [github.com/karatelabs/karate](https://github.com/karatelabs/karate)
+- **Playlist en español**: [Automatización de pruebas API con Karate Framework](https://www.youtube.com/playlist?list=PL2sAMOeAfk_0QVf6Z9lYf8lB9Qv6dD7nY)
