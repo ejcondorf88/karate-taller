@@ -1,6 +1,15 @@
-# Plantilla de Proyecto Karate Framework
+# Plantilla de Proyecto Karate Framework - API AutomationExercise
 
-Este proyecto es una plantilla base para pruebas de API con [Karate Framework](https://github.com/karatelabs/karate). Puedes adaptarla para probar cualquier API REST.
+Plantilla base para pruebas de API REST con [Karate Framework](https://github.com/karatelabs/karate), configurada específicamente para la API pública de [AutomationExercise](https://automationexercise.com/api_list).
+
+## API Objetivo
+
+La API de AutomationExercise提供了 endpoints para práctica de pruebas API. Esta plantilla implementa 4 escenarios clave:
+
+1. **GET** - Obtener lista de productos
+2. **POST** - Buscar producto por término
+3. **PUT** - Actualizar cuenta de usuario
+4. **DELETE** - Eliminar cuenta de usuario
 
 ## Prerrequisitos
 
@@ -16,99 +25,134 @@ karate-taller/
 ├── src/
 │   └── test/
 │       ├── java/                    # Código Java de pruebas
-│       │   ├── examples/            # Paquete de ejemplos (puedes renombrar)
-│       │   │   ├── ExamplesTest.java    # Runner paralelo para todos los features
-│       │   │   └── users/           # Ejemplo de feature (puedes eliminar o modificar)
-│       │   │       ├── UsersRunner.java 
-│       │   │       └── users.feature    
-│       │   └── ...                  # Agrega tus paquetes de pruebas aquí
+│       │   ├── automation/          # Paquete principal de pruebas
+│       │   │   ├── AutomationTest.java     # Runner paralelo para todos los features
+│       │   │   ├── products/        # Pruebas de productos (GET)
+│       │   │   │   ├── ProductsRunner.java
+│       │   │   │   └── products.feature
+│       │   │   ├── search/          # Pruebas de búsqueda (POST)
+│       │   │   │   ├── SearchRunner.java
+│       │   │   │   └── search.feature
+│       │   │   └── users/           # Pruebas de usuarios (PUT, DELETE)
+│       │   │       ├── UsersRunner.java
+│       │   │       └── user-crud.feature
+│       │   └── examples/            # Ejemplo original (puedes eliminar)
 │       └── resources/               # Recursos de configuración
-│           ├── karate-config.js     # Configuración global de entornos
+│           ├── karate-config.js     # Configuración de API y datos de prueba
 │           └── logback-test.xml     # Configuración de logs
 └── target/                          # Directorio de salida Maven
     └── karate-reports/              # Reportes HTML generados
 ```
 
-## Personalización para tu API
+## Configuración de la API
 
-1. **Configurar URL base**: En `src/test/resources/karate-config.js` establece la URL de tu API.
-2. **Crear tus features**: Copia la estructura de `users.feature` y adapta a tus endpoints.
-3. **Crear runners**: Crea clases como `UsersRunner.java` para tus nuevos features.
-4. **Actualizar ExamplesTest**: Asegúrate de que incluya tus nuevos paquetes.
+La configuración específica para AutomationExercise está en `karate-config.js`:
+
+```javascript
+// URL base de la API
+baseUrl: 'https://automationexercise.com/api'
+
+// Función para generar emails únicos
+generateEmail: function() { ... }
+
+// Datos por defecto para creación de usuarios
+defaultUserData: function() { ... }
+```
 
 ## Ejecución de Pruebas
 
-### Ejecutar todas las pruebas en paralelo
+### Ejecutar todas las pruebas (GET, POST, PUT, DELETE)
 ```bash
 mvn test
 ```
 
-### Ejecutar un feature específico
+### Ejecutar pruebas por tipo de método HTTP
 ```bash
-mvn test -Dtest=TuRunner
+# Solo GET (productos)
+mvn test -Dtest=ProductsRunner
+
+# Solo POST (búsqueda)
+mvn test -Dtest=SearchRunner
+
+# Solo PUT y DELETE (usuarios)
+mvn test -Dtest=UsersRunner
 ```
 
 ### Ejecutar desde IDE
-Clic derecho en cualquier archivo `*Runner.java` o `*Test.java` → Run/Debug
+Clic derecho en cualquier archivo `*Runner.java` o `AutomationTest.java` → Run/Debug
+
+## Escenarios Implementados
+
+### 1. GET - Obtener lista de productos
+- **Endpoint**: `/productsList`
+- **Método**: GET
+- **Valida**: Status 200, array de productos con estructura esperada
+
+### 2. POST - Buscar producto
+- **Endpoint**: `/searchProduct`
+- **Método**: POST
+- **Parámetros**: `search_product` (ej: "top")
+- **Valida**: Status 200 para búsqueda exitosa, Status 400 para parámetro faltante
+
+### 3. PUT - Actualizar usuario
+- **Endpoint**: `/updateAccount`
+- **Método**: PUT
+- **Flujo**: 
+  1. Crear usuario con email único
+  2. Actualizar campos del usuario
+  3. Validar respuesta "User updated!"
+
+### 4. DELETE - Eliminar usuario
+- **Endpoint**: `/deleteAccount`
+- **Método**: DELETE
+- **Flujo**:
+  1. Crear usuario con email único
+  2. Eliminar usuario
+  3. Validar respuesta "Account deleted!"
 
 ## Reportes
 
-Después de ejecutar las pruebas, abre:
+Los reportes HTML se generan automáticamente en:
 ```
-target/karate-reports/karate-summary.html
-```
-
-## Configuración de Entornos
-
-Edita `karate-config.js` para cambiar la URL base y otras variables:
-```javascript
-function fn() {
-  var config = {
-    baseUrl: 'https://tu-api.com',  // Cambia esto
-    apiKey: 'tu-api-key'
-  }
-  return config;
-}
+target/karate-reports/
+├── automation.products.products.html
+├── automation.search.search.html
+├── automation.users.user-crud.html
+└── karate-summary.html  # Resumen general
 ```
 
-## Estructura de un Feature
+## Personalización para Otros APIs
 
-```gherkin
-Feature: Descripción de tu funcionalidad
+Para adaptar esta plantilla a otra API:
 
-  Background:
-    * url baseUrl  # Usa variable de configuración
+1. **Modificar `karate-config.js`**:
+   - Cambiar `baseUrl` a tu nueva API
+   - Ajustar `defaultUserData()` si es necesario
 
-  Scenario: Mi primer escenario
-    Given path '/endpoint'
-    When method get
-    Then status 200
-    And match response.field == 'valor esperado'
-```
+2. **Crear nuevos features**:
+   - Copiar estructura de los existentes
+   - Modificar endpoints, parámetros y validaciones
+
+3. **Actualizar runners**:
+   - Crear nuevos `*Runner.java` para cada feature
+   - O modificar `AutomationTest.java` para incluir nuevos paquetes
 
 ## Comandos Maven Útiles
 
 ```bash
-mvn clean test        # Limpiar y ejecutar
+mvn clean test        # Limpiar y ejecutar todas las pruebas
 mvn test-compile      # Solo compilar pruebas
 mvn test -X           # Ejecutar con debug
 ```
 
 ## Solución de Problemas
 
-- **Codificación**: Asegura UTF-8 en `pom.xml` (ya configurado)
-- **Pruebas no ejecutan**: Verifica Java 17+ y Maven en PATH
-- **Reportes no generan**: Permisos de escritura en `target/`
+- **Error 405 (Method Not Allowed)**: Algunos endpoints solo soportan métodos específicos
+- **Error 400 (Bad Request)**: Parámetros requeridos faltantes
+- **Datos de usuario**: Los tests de PUT/DELETE crean usuarios temporales con emails únicos
 
 ## Recursos
 
+- [API AutomationExercise](https://automationexercise.com/api_list)
 - [Documentación Karate](https://karatelabs.github.io/karate/)
-- [GitHub Karate](https://github.com/karatelabs/karate)
 - [Sintaxis Gherkin](https://karatelabs.github.io/karate/#karate-language)
-
-## Notas para el Taller
-
-- La estructura en `examples/users/` es solo ilustrativa
-- Puedes eliminar o modificar esos archivos
-- Copia y adapta la estructura para tu API específica
-- La ejecución paralela está configurada en `ExamplesTest.java`
