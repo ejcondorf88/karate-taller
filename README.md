@@ -4,10 +4,10 @@ Plantilla base para pruebas de API REST con [Karate Framework](https://github.co
 
 ## API Objetivo
 
-La API de AutomationExercise提供了 endpoints para práctica de pruebas API. Esta plantilla implementa 4 escenarios clave:
+La API de AutomationExercise提供了 endpoints para práctica de pruebas API. Esta plantilla implementa 4 verbos HTTP clave:
 
 1. **GET** - Obtener lista de productos
-2. **POST** - Buscar producto por término
+2. **POST** - Buscar producto y crear usuarios
 3. **PUT** - Actualizar cuenta de usuario
 4. **DELETE** - Eliminar cuenta de usuario
 
@@ -24,28 +24,39 @@ karate-taller/
 ├── pom.xml                          # Configuración Maven
 ├── src/
 │   └── test/
-│       ├── java/                    # Código Java de pruebas
-│       │   ├── automation/          # Paquete principal de pruebas
-│       │   │   ├── AutomationTest.java     # Runner paralelo para todos los features
-│       │   │   ├── products/        # Pruebas de productos (GET)
-│       │   │   │   ├── ProductsRunner.java
-│       │   │   │   └── products.feature
-│       │   │   ├── search/          # Pruebas de búsqueda (POST)
-│       │   │   │   ├── SearchRunner.java
-│       │   │   │   └── search.feature
-│       │   │   └── users/           # Pruebas de usuarios (PUT, DELETE)
-│       │   │       ├── UsersRunner.java
-│       │   │       └── user-crud.feature
-│       └── resources/               # Recursos de configuración
-│           ├── karate-config.js     # Configuración de API y datos de prueba
-│           └── logback-test.xml     # Configuración de logs
+│       ├── java/                    # Todos los archivos de prueba
+│       │   ├── karate-config.js     # Configuración global
+│       │   ├── logback-test.xml     # Configuración de logs
+│       │   ├── TestRunner.java      # Runner principal para ejecución paralela
+│       │   │
+│       │   ├── users/               # Pruebas de usuarios
+│       │   │   ├── users.feature        # Escenarios CRUD de usuarios
+│       │   │   ├── user-data.json       # Datos de prueba
+│       │   │   └── UsersRunner.java     # Runner individual
+│       │   │
+│       │   ├── products/            # Pruebas de productos
+│       │   │   ├── products.feature     # Escenarios de listado y búsqueda
+│       │   │   ├── product-data.csv     # Datos de productos
+│       │   │   └── ProductsRunner.java  # Runner individual
+│       │   │
+│       │   ├── auth/                # Componentes de autenticación (placeholders)
+│       │   │   ├── login.feature
+│       │   │   └── oauth-flow.feature
+│       │   │
+│       │   └── common/              # Utilidades compartidas
+│       │       ├── api-helpers.feature  # Funciones reutilizables
+│       │       ├── validators.js        # Validadores JavaScript
+│       │       └── test-data.json       # Datos comunes
+│       │
+│       └── resources/               # (Vacío - config movida a java/)
+│
 └── target/                          # Directorio de salida Maven
     └── karate-reports/              # Reportes HTML generados
 ```
 
 ## Configuración de la API
 
-La configuración específica para AutomationExercise está en `karate-config.js`:
+La configuración está en `src/test/java/karate-config.js`:
 
 ```javascript
 // URL base de la API
@@ -60,95 +71,69 @@ defaultUserData: function() { ... }
 
 ## Ejecución de Pruebas
 
-### Ejecutar todas las pruebas (GET, POST, PUT, DELETE)
+### Ejecutar todas las pruebas (paralelo)
 ```bash
 mvn test
 ```
 
-### Ejecutar pruebas por tipo de método HTTP
+### Ejecutar pruebas por dominio
 ```bash
-# Solo GET (productos)
+# Solo productos (GET, POST búsqueda)
 mvn test -Dtest=ProductsRunner
 
-# Solo POST (búsqueda)
-mvn test -Dtest=SearchRunner
-
-# Solo PUT y DELETE (usuarios)
+# Solo usuarios (POST creación, PUT actualización, DELETE eliminación)
 mvn test -Dtest=UsersRunner
+
+# Ejecutar solo un runner específico
+mvn test -Dtest=TestRunner  # Todos los dominios
 ```
 
 ### Ejecutar desde IDE
-Clic derecho en cualquier archivo `*Runner.java` o `AutomationTest.java` → Run/Debug
+Clic derecho en `TestRunner.java`, `ProductsRunner.java` o `UsersRunner.java` → Run/Debug
 
 ## Escenarios Implementados
 
-### 1. GET - Obtener lista de productos
-- **Endpoint**: `/productsList`
-- **Método**: GET
-- **Valida**: Status 200, array de productos con estructura esperada
+### Products (3 escenarios)
+- **GET** productos (listado completo)
+- **POST** búsqueda con parámetro válido
+- **POST** búsqueda sin parámetro (error 400)
 
-### 2. POST - Buscar producto
-- **Endpoint**: `/searchProduct`
-- **Método**: POST
-- **Parámetros**: `search_product` (ej: "top")
-- **Valida**: Status 200 para búsqueda exitosa, Status 400 para parámetro faltante
+### Users (2 escenarios)
+- **POST + PUT**: Crear cuenta y actualizarla
+- **POST + DELETE**: Crear cuenta y eliminarla
 
-### 3. PUT - Actualizar usuario
-- **Endpoint**: `/updateAccount`
-- **Método**: PUT
-- **Flujo**: 
-  1. Crear usuario con email único
-  2. Actualizar campos del usuario
-  3. Validar respuesta "User updated!"
+## Archivos de Datos de Prueba
 
-### 4. DELETE - Eliminar usuario
-- **Endpoint**: `/deleteAccount`
-- **Método**: DELETE
-- **Flujo**:
-  1. Crear usuario con email único
-  2. Eliminar usuario
-  3. Validar respuesta "Account deleted!"
+- `users/user-data.json`: Datos genéricos para creación de usuarios
+- `products/product-data.csv`: Ejemplo de productos
+- `common/test-data.json`: Datos compartidos entre dominios
 
 ## Reportes
 
 Los reportes HTML se generan automáticamente en:
 ```
-target/karate-reports/
-├── automation.products.products.html
-├── automation.search.search.html
-├── automation.users.user-crud.html
-└── karate-summary.html  # Resumen general
+target/karate-reports/karate-summary.html
 ```
 
-## Personalización para Otros APIs
+## Personalización
 
-Para adaptar esta plantilla a otra API:
+### Agregar nuevo dominio
+1. Crear carpeta en `src/test/java/nuevo-dominio/`
+2. Crear `nuevo-dominio.feature` con escenarios
+3. Crear `NuevoDominioRunner.java`
+4. Actualizar `TestRunner.java` para incluir `classpath:nuevo-dominio`
 
-1. **Modificar `karate-config.js`**:
-   - Cambiar `baseUrl` a tu nueva API
-   - Ajustar `defaultUserData()` si es necesario
-
-2. **Crear nuevos features**:
-   - Copiar estructura de los existentes
-   - Modificar endpoints, parámetros y validaciones
-
-3. **Actualizar runners**:
-   - Crear nuevos `*Runner.java` para cada feature
-   - O modificar `AutomationTest.java` para incluir nuevos paquetes
+### Modificar datos de prueba
+- Editar archivos JSON/CSV en cada directorio de dominio
+- Los datos se cargan automáticamente si se siguen las convenciones
 
 ## Comandos Maven Útiles
 
 ```bash
-mvn clean test        # Limpiar y ejecutar todas las pruebas
+mvn clean test        # Limpiar y ejecutar pruebas
 mvn test-compile      # Solo compilar pruebas
 mvn test -X           # Ejecutar con debug
 ```
-
-## Solución de Problemas
-
-- **Error 405 (Method Not Allowed)**: Algunos endpoints solo soportan métodos específicos
-- **Error 400 (Bad Request)**: Parámetros requeridos faltantes
-- **Datos de usuario**: Los tests de PUT/DELETE crean usuarios temporales con emails únicos
 
 ## Recursos
 
@@ -156,7 +141,9 @@ mvn test -X           # Ejecutar con debug
 - [Documentación Karate](https://karatelabs.github.io/karate/)
 - [Sintaxis Gherkin](https://karatelabs.github.io/karate/#karate-language)
 
-### Recursos de Aprendizaje para el Taller
+## Notas para el Taller
 
-- **Repositorio oficial de Karate**: [github.com/karatelabs/karate](https://github.com/karatelabs/karate)
-- **Playlist en español**: [Automatización de pruebas API con Karate Framework](https://www.youtube.com/playlist?list=PL2sAMOeAfk_0QVf6Z9lYf8lB9Qv6dD7nY)
+- La estructura está diseñada para ser educativa y escalable
+- Los componentes `auth/` y `common/` son placeholders para extender
+- Cada dominio es independiente pero comparte configuración global
+- Los datos de prueba se generan dinámicamente para evitar conflictos
