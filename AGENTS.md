@@ -5,7 +5,7 @@ Este archivo proporciona orientación para agentes de codificación IA que traba
 ## Descripción del Proyecto
 - **Framework**: Karate Framework 1.5.2 para pruebas de API
 - **Sistema de Construcción**: Maven 3.x con Java 17
-- **Estructura**: Diseño estándar de Maven con `src/test/java` y `src/test/resources`
+- **Estructura**: Organización modular por dominios (users, products, auth, common)
 - **API Bajo Prueba**: https://automationexercise.com/api_list
 
 ## Comandos de Construcción/Prueba
@@ -21,12 +21,11 @@ mvn compile
 # Ejecutar pruebas sin limpiar
 mvn test
 
-# Ejecutar una clase de prueba específica
-mvn test -Dtest=AutomationTest
+# Ejecutar el runner principal (todos los dominios)
+mvn test -Dtest=TestRunner
 
-# Ejecutar un runner de feature específico
+# Ejecutar runners específicos por dominio
 mvn test -Dtest=ProductsRunner
-mvn test -Dtest=SearchRunner
 mvn test -Dtest=UsersRunner
 
 # Ejecutar pruebas con salida detallada
@@ -37,17 +36,15 @@ mvn surefire-report:report
 ```
 
 ### Ejecución de Features Individuales
-- Usar `mvn test -Dtest=ProductsRunner` para products.feature
-- Usar `mvn test -Dtest=SearchRunner` para search.feature
-- Usar `mvn test -Dtest=UsersRunner` para user-crud.feature
-- O ejecutar directamente desde el IDE haciendo clic derecho en el archivo *Runner.java
+- Ejecutar desde IDE: Clic derecho en `ProductsRunner.java`, `UsersRunner.java` o `TestRunner.java` → Run/Debug
+- Los features se ejecutan por dominio (products, users, auth, common)
 
 ## Guías de Estilo de Código
 
 ### Archivos Java
-- **Nomenclatura de paquetes**: Todo en minúsculas, basado en dominio (`automation.products`, `automation.search`, `automation.users`)
-- **Nomenclatura de clases**: PascalCase, descriptiva (`ProductsRunner`, `AutomationTest`)
-- **Nomenclatura de métodos**: camelCase, basada en verbos (`testProducts`, `testParallel`)
+- **Nomenclatura de paquetes**: Todo en minúsculas, basado en dominio (`users`, `products`, `auth`, `common`)
+- **Nomenclatura de clases**: PascalCase, descriptiva (`ProductsRunner`, `UsersRunner`, `TestRunner`)
+- **Nomenclatura de métodos**: camelCase, basada en verbos (`testProducts`, `testUsers`, `testParallel`)
 - **Importaciones**:
   - Usar importaciones explícitas, no comodines
   - Agrupar: Librería estándar de Java → terceros → importaciones del proyecto
@@ -63,10 +60,10 @@ mvn surefire-report:report
 ### Archivos Feature (.feature)
 - **Idioma**: Español para descripciones, inglés para palabras clave de Gherkin
   - Usar `Feature:`, `Scenario:`, `Background:`, `Given`, `When`, `Then`, `And`
-  - Descripciones en español: `Pruebas de API de listado de productos`
+  - Descripciones en español: `Pruebas de API de productos (listado y búsqueda)`
 - **Estructura**:
   - `Background:` para configuración compartida (URL, datos base)
-  - Un feature por preocupación de API (productos, búsqueda, usuarios)
+  - Un feature por dominio o área de preocupación
   - Cada escenario debe ser independiente y autocontenido
 - **Aserciones**:
   - Usar la sintaxis `match` de Karate para validación JSON
@@ -75,9 +72,10 @@ mvn surefire-report:report
 - **Gestión de datos**:
   - Usar `karate-config.js` para datos específicos del entorno
   - Generar datos únicos para pruebas que crean/eliminan recursos
+  - Almacenar datos de prueba en archivos JSON/CSV dentro de cada directorio de dominio
 
 ### Archivos de Configuración
-- **karate-config.js**:
+- **karate-config.js**: Ubicado en `src/test/java/`
   - Configuración central para la URL base de la API y datos de prueba
   - Funciones para generar identificadores únicos (correos, etc.)
   - Cambio de entorno mediante la propiedad `karate.env`
@@ -86,29 +84,38 @@ mvn surefire-report:report
 ### Organización de Archivos
 ```
 src/test/java/
-├── automation/              # Paquete principal de pruebas
-│   ├── AutomationTest.java  # Runner de pruebas en paralelo
-│   ├── products/            # Pruebas de API de productos
-│   │   ├── ProductsRunner.java
-│   │   └── products.feature
-│   ├── search/              # Pruebas de API de búsqueda
-│   │   ├── SearchRunner.java
-│   │   └── search.feature
-│   └── users/               # Pruebas de cuentas de usuario
-│       ├── UsersRunner.java
-│       └── user-crud.feature
-└── resources/               # Archivos de configuración
-    ├── karate-config.js
-    └── logback-test.xml
+├── karate-config.js              # Configuración global
+├── logback-test.xml              # Configuración de logs
+├── TestRunner.java               # Runner principal para ejecución paralela
+│
+├── users/                        # Dominio: Usuarios
+│   ├── users.feature             # Escenarios CRUD de usuarios
+│   ├── user-data.json            # Datos de prueba
+│   └── UsersRunner.java          # Runner individual
+│
+├── products/                     # Dominio: Productos
+│   ├── products.feature          # Escenarios de listado y búsqueda
+│   ├── product-data.csv          # Datos de productos
+│   └── ProductsRunner.java       # Runner individual
+│
+├── auth/                         # Dominio: Autenticación (placeholders)
+│   ├── login.feature
+│   └── oauth-flow.feature
+│
+└── common/                       # Utilidades compartidas
+    ├── api-helpers.feature       # Funciones reutilizables
+    ├── validators.js             # Validadores JavaScript
+    └── test-data.json            # Datos comunes
 ```
 
 ## Patrones Comunes
 
 ### Creación de Nuevos Escenarios de Prueba
-1. Crear el archivo feature en el directorio de paquete apropiado
+1. Crear el archivo feature en el directorio de dominio apropiado
 2. Crear el Runner.java correspondiente con la anotación `@Karate.Test`
-3. Agregar a la ejecución paralela en AutomationTest.java si es necesario
-4. Actualizar AGENTS.md si se agregan nuevos patrones
+3. Agregar a la ejecución paralela en TestRunner.java si es necesario
+4. Crear archivos de datos de prueba (JSON/CSV) en el mismo directorio
+5. Actualizar AGENTS.md si se agregan nuevos patrones
 
 ### Validación de Respuestas de API
 ```gherkin
@@ -127,6 +134,7 @@ And match response.message == 'User created!'
 ### Generación de Datos
 - Usar `java.lang.System.currentTimeMillis()` para IDs únicos
 - Almacenar datos generados en variables para escenarios de múltiples pasos
+- Usar archivos JSON/CSV para datos de prueba complejos
 - Limpiar los recursos creados cuando sea posible (pruebas DELETE)
 
 ## Configuración de Entorno
@@ -136,7 +144,9 @@ And match response.message == 'User created!'
 
 ## Notas para Agentes
 - Esta es una plantilla de taller — mantener los ejemplos simples y educativos
+- La estructura modular permite escalar añadiendo nuevos dominios
 - Mantener las descripciones en español para los participantes del taller
 - Todas las pruebas deben pasar antes de confirmar los cambios
 - Ejecutar `mvn clean test` para verificar el conjunto completo de pruebas
 - Los reportes HTML se generan en `target/karate-reports/` después de la ejecución de pruebas
+- Los directorios `auth/` y `common/` son placeholders para extender funcionalidades
