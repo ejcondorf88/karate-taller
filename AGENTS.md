@@ -5,7 +5,7 @@ Este archivo proporciona orientación para agentes de codificación IA que traba
 ## Descripción del Proyecto
 - **Framework**: Karate Framework 1.5.2 para pruebas de API
 - **Sistema de Construcción**: Maven 3.x con Java 17
-- **Estructura**: Organización modular por dominios (users, products)
+- **Estructura**: Organización modular con features reutilizables
 - **API Bajo Prueba**: https://automationexercise.com/api_list
 
 ## Comandos de Construcción/Prueba
@@ -53,6 +53,48 @@ mvn test -Dkarate.options="--tags @smoke,@products"    # Combinar tags (OR lógi
 ### Ejecución de Features Individuales
 - Ejecutar desde IDE: Clic derecho en `ProductsRunner.java`, `UsersRunner.java` o `TestRunner.java` → Run/Debug
 - Los features se ejecutan por dominio (products, users)
+- Para ejecutar un solo escenario: usar tags específicos como `@createUser` o `@listProducts`
+
+## Estructura del Proyecto Actualizada
+
+```
+src/test/java/
+├── allure.properties                # Configuración de Allure
+├── karate-config.js                 # Configuración mínima (entorno + baseUrl + carga de helpers)
+├── logback-test.xml                 # Configuración de logs
+├── TestRunner.java                  # Runner principal para ejecución paralela
+│
+├── common/                          # Features reutilizables
+│   ├── product/                     # Reutilizables para productos
+│   │   ├── list-products.feature
+│   │   ├── search-product.feature
+│   │   └── invalid-search.feature
+│   └── user/                        # Reutilizables para usuarios
+│       ├── create-user.feature
+│       ├── update-user.feature
+│       └── delete-user.feature
+│
+├── data/                            # Datos de prueba centralizados
+│   ├── user-data.json
+│   └── product-data.json
+│
+├── schemas/                         # Validación JSON
+│   └── user-schema.json
+│
+├── utils/                           # Helpers JavaScript
+│   ├── generateEmail.js             # Genera emails únicos con timestamp
+│   ├── loadUserData.js              # Carga datos de usuario desde JSON
+│   ├── loadProductData.js           # Carga datos de producto desde JSON
+│   └── deepCopy.js                  # Copia profunda de objetos
+│
+├── users/                           # Pruebas de usuarios
+│   ├── users.feature                # Escenarios CRUD de usuarios
+│   └── UsersRunner.java             # Runner individual
+│
+└── products/                        # Pruebas de productos
+    ├── products.feature             # Escenarios de listado y búsqueda
+    └── ProductsRunner.java          # Runner individual
+```
 
 ## Guías de Estilo de Código
 
@@ -80,65 +122,93 @@ mvn test -Dkarate.options="--tags @smoke,@products"    # Combinar tags (OR lógi
   - `Background:` para configuración compartida (URL, datos base)
   - Un feature por dominio o área de preocupación
   - Cada escenario debe ser independiente y autocontenido
+- **Features Reutilizables (common/)**:
+  - Siempre incluir `Given url baseUrl`
+  - Usar `And form field campo = variable` (sin `#()` dentro del feature)
+  - Terminar con `* def result = response`
+  - NO incluir assertions (el caller las maneja)
+- **Patrón de Llamada**:
+  ```gherkin
+  * def userData = deepCopy(userDataTemplate)
+  * set userData.email = generateEmail()
+  * def createRes = call read('classpath:common/user/create-user.feature') { userData: '#(userData)' }
+  Then match createRes.result.responseCode == 201
+  ```
 - **Aserciones**:
   - Usar la sintaxis `match` de Karate para validación JSON
   - Validar tanto códigos de estado como contenido de respuesta
-  - Manejar códigos de respuesta específicos de la API (ej. campo `responseCode`)
+  - El resultado del `call` está en `variable.result.responseCode`
 - **Gestión de datos**:
-  - Usar `karate-config.js` para datos específicos del entorno
-  - Generar datos únicos para pruebas que crean/eliminan recursos
-  - Almacenar datos de prueba en archivos JSON/CSV dentro de cada directorio de dominio
+  - Cargar datos desde `data/` usando helpers (`loadUserData()`, `loadProductData()`)
+  - Usar `deepCopy()` para crear copias sin mutar datos base
+  - Generar datos únicos con `generateEmail()`
 - **Uso de Tags**:
-  - **Importancia**: Permiten organizar y ejecutar selectivamente escenarios de prueba.
-  - **Tags estándar del proyecto**:
-    - **Por Dominio**: `@users`, `@products`
-    - **Por Método HTTP**: `@get`, `@post`, `@put`, `@delete`
-    - **Por Tipo de Prueba/Ciclo de Ejecución**:
-      - `@smoke`: Pruebas rápidas, críticas, que verifican la funcionalidad básica del sistema.
-      - `@regresion`: Pruebas más exhaustivas que cubren funcionalidades detalladas.
-      - `@crud`: Pruebas que cubren el ciclo completo de creación, lectura, actualización y eliminación de un recurso.
-    - **Tags de Estado**:
-      - `@wip`: (Work In Progress) para escenarios en desarrollo que deben ser excluidos de las ejecuciones principales.
-      - `@ignore`: Alternativa a `@wip` o para pruebas deshabilitadas temporalmente.
-  - **Ejemplo de aplicación**:
-    - A nivel de Feature: `@users Feature: ...`
-    - A nivel de Scenario: `@post @put @regresion Scenario: ...`
-  - **Ejecución con Tags**: Usar la opción `-Dkarate.options="--tags <tag_name>"` al ejecutar pruebas con Maven.
+  - **Por Dominio**: `@users`, `@products`
+  - **Por Método HTTP**: `@get`, `@post`, `@put`, `@delete`
+  - **Por Tipo de Prueba**:
+    - `@smoke`: Pruebas rápidas, críticas
+    - `@regresion`: Pruebas exhaustivas
+    - `@crud`: Ciclo completo CRUD
+  - **Tags de Estado**:
+    - `@wip`: Work In Progress (excluir de ejecuciones principales)
+    - `@ignore`: Pruebas deshabilitadas temporalmente
 
-### Archivos de Configuración
-- **karate-config.js**: Ubicado en `src/test/java/`
-  - Configuración central para la URL base de la API y datos de prueba
-  - Funciones para generar identificadores únicos (correos, etc.)
-  - Cambio de entorno mediante la propiedad `karate.env`
-- **logback-test.xml**: Configuración de registro para la ejecución de pruebas
+### Archivos JavaScript (utils/)
+- **Patrón**: Cada archivo exporta una función que devuelve la función helper
+  ```javascript
+  // generateEmail.js
+  function() {
+    return function() {
+      return 'user_' + new Date().getTime() + '@mail.com';
+    }
+  }
+  ```
+- **Carga en karate-config.js**:
+  ```javascript
+  config.generateEmail = read('classpath:utils/generateEmail.js')();
+  ```
+- **Helpers disponibles**:
+  - `generateEmail()`: Genera emails únicos
+  - `loadUserData()`: Retorna datos de usuario desde JSON
+  - `loadProductData()`: Retorna datos de producto desde JSON
+  - `deepCopy(obj)`: Copia profunda de objetos
 
-### Organización de Archivos
-```
-src/test/java/
-├── allure.properties                # Configuración de Allure
-├── karate-config.js                 # Configuración global
-├── logback-test.xml                 # Configuración de logs
-├── TestRunner.java                  # Runner principal para ejecución paralela
-│
-├── users/                           # Dominio: Usuarios
-│   ├── users.feature                # Escenarios CRUD de usuarios
-│   ├── user-data.json               # Datos de prueba
-│   └── UsersRunner.java             # Runner individual
-│
-└── products/                        # Dominio: Productos
-    ├── products.feature             # Escenarios de listado y búsqueda
-    ├── product-data.csv             # Datos de productos
-    └── ProductsRunner.java          # Runner individual
-```
+### Configuración karate-config.js
+- **Ubicación**: `src/test/java/karate-config.js`
+- **Responsabilidad mínima**:
+  1. Detectar entorno (`karate.env`)
+  2. Establecer `baseUrl`
+  3. Cargar helpers desde `utils/`
+  4. Personalizaciones por entorno (dev, e2e)
+- **NO debe contener**:
+  - Lógica de negocio
+  - Datos de prueba (están en `data/`)
+  - Helpers (están en `utils/`)
 
 ## Patrones Comunes
 
 ### Creación de Nuevos Escenarios de Prueba
-1. Crear el archivo feature en el directorio de dominio apropiado
-2. Crear el Runner.java correspondiente con la anotación `@Karate.Test`
-3. Agregar a la ejecución paralela en TestRunner.java si es necesario
-4. Crear archivos de datos de prueba (JSON/CSV) en el mismo directorio
-5. Actualizar AGENTS.md si se agregan nuevos patrones
+1. Crear feature reutilizable en `common/[dominio]/` (ej. `common/product/search-product.feature`)
+2. Crear feature de prueba en `[dominio]/[dominio].feature`
+3. Crear Runner.java correspondiente con anotación `@Karate.Test`
+4. Agregar a ejecución paralela en `TestRunner.java` si es necesario
+5. Crear datos de prueba en `data/` (JSON/CSV)
+6. Agregar helpers en `utils/` si se necesitan nuevas funciones
+
+### Patrón para Features Reutilizables
+```gherkin
+# common/[domain]/[action]-[domain].feature
+Feature: [Action] [domain] reusable action
+
+Scenario: [Description]
+  Given url baseUrl
+  And path '[endpoint]'
+  # Form fields sin #() - usar variable directamente
+  And form field campo1 = variable1.campo1
+  And form field campo2 = variable2.campo2
+  When method [verb]
+  * def result = response
+```
 
 ### Validación de Respuestas de API
 ```gherkin
@@ -152,23 +222,48 @@ And match response.products[0] contains { id: '#number', name: '#string' }
 # Validación de código de respuesta (específico de la API)
 And match response.responseCode == 201
 And match response.message == 'User created!'
+
+# Después de call a feature reutilizable
+Then match createRes.result.responseCode == 201
+And match createRes.result.message == 'User created!'
 ```
 
 ### Generación de Datos
-- Usar `java.lang.System.currentTimeMillis()` para IDs únicos
-- Almacenar datos generados en variables para escenarios de múltiples pasos
-- Usar archivos JSON/CSV para datos de prueba complejos
-- Limpiar los recursos creados cuando sea posible (pruebas DELETE)
+- Usar `generateEmail()` para emails únicos con timestamp
+- Usar `deepCopy(userDataTemplate)` para crear copias modificables
+- Almacenar datos en `data/[domain]-data.json`
+- Limpiar recursos creados cuando sea posible (DELETE tests)
 
 ## Configuración de Entorno
-- Entorno predeterminado: `dev`
-- Configurar mediante: `mvn test -Dkarate.env=e2e`
-- La configuración en `karate-config.js` maneja la URL y credenciales por entorno
+- **Entorno predeterminado**: `dev`
+- **Configurar mediante**: `mvn test -Dkarate.env=e2e`
+- **Personalizaciones**: En `karate-config.js` sección `if (env == 'dev')` / `else if (env == 'e2e')`
+- **Variables de entorno**: `karate.env` (system property)
 
 ## Notas para Agentes
-- Esta es una plantilla de taller — mantener los ejemplos simples y educativos
-- La estructura modular permite escalar añadiendo nuevos dominios
-- Mantener las descripciones en español para los participantes del taller
-- Todas las pruebas deben pasar antes de confirmar los cambios
-- Ejecutar `mvn clean test` para verificar el conjunto completo de pruebas
-- Los reportes HTML se generan en `target/karate-reports/` y los resultados Allure en `target/allure-results/` después de la ejecución de pruebas
+- **Esta es una plantilla de taller** — mantener los ejemplos simples y educativos
+- **Arquitectura modular**: Permite escalar añadiendo nuevos dominios en `common/`, `[dominio]/`, `data/`
+- **Idioma**: Mantener descripciones en español para participantes del taller
+- **Calidad**: Todas las pruebas deben pasar antes de confirmar cambios
+- **Verificación**: Ejecutar `mvn clean test` para verificar conjunto completo (debe ser 6/6 pruebas pasando)
+- **Reportes**: HTML en `target/karate-reports/`, Allure en `target/allure-results/`
+- **Evitar**: No usar `#()` dentro de features reutilizables - causa errores de interpolación
+- **Parámetros**: Usar `'#(variable)'` al llamar features reutilizables, no `#(variable)` sin comillas
+
+## Errores Comunes a Evitar
+1. **Uso incorrecto de `#()`**:
+   - ❌ Mal: `And form field name = '#(userData.name)'` dentro de feature reutilizable
+   - ✅ Bien: `And form field name = userData.name` dentro de feature reutilizable
+   - ✅ Bien: `call read(...) { userData: '#(userData)' }` al llamar
+
+2. **Acceso incorrecto al resultado**:
+   - ❌ Mal: `match createRes.responseCode == 201`
+   - ✅ Bien: `match createRes.result.responseCode == 201`
+
+3. **Mutación de datos base**:
+   - ❌ Mal: `* userData.email = generateEmail()` (muta template)
+   - ✅ Bien: `* def userData = deepCopy(userDataTemplate)` then `* set userData.email = generateEmail()`
+
+4. **Falta de cleanup**:
+   - ❌ Mal: Crear usuarios sin eliminarlos
+   - ✅ Bien: Incluir DELETE tests o cleanup en escenarios

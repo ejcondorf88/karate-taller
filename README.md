@@ -1,13 +1,15 @@
 # Plantilla de Proyecto Karate Framework - API AutomationExercise
 
-Plantilla base para pruebas de API REST con [Karate Framework](https://github.com/karatelabs/karate), configurada específicamente para la API pública de [AutomationExercise](https://automationexercise.com/api_list).
+Plantilla educativa para pruebas de API REST con [Karate Framework](https://github.com/karatelabs/karate), configurada específicamente para la API pública de [AutomationExercise](https://automationexercise.com/api_list).
 
 ## API Objetivo
 
-La API de AutomationExercise提供了 endpoints para práctica de pruebas API. Esta plantilla implementa 4 verbos HTTP clave:
+La API de AutomationExercise proporciona endpoints para práctica de pruebas API. Esta plantilla implementa pruebas completas con arquitectura modular y reutilizable.
+
+### Endpoints Probados
 
 1. **GET** - Obtener lista de productos
-2. **POST** - Buscar producto y crear usuarios
+2. **POST** - Buscar productos, crear usuarios
 3. **PUT** - Actualizar cuenta de usuario
 4. **DELETE** - Eliminar cuenta de usuario
 
@@ -21,31 +23,52 @@ La API de AutomationExercise提供了 endpoints para práctica de pruebas API. E
 
 ```
 karate-taller/
-├── pom.xml                          # Configuración Maven
+├── pom.xml                                 # Configuración Maven
 ├── src/
 │   └── test/
-│       ├── java/                    # Todos los archivos de prueba
-│       │   ├── allure.properties    # Configuración de Allure
-│       │   ├── karate-config.js     # Configuración global
-│       │   ├── logback-test.xml     # Configuración de logs
-│       │   ├── TestRunner.java      # Runner principal para ejecución paralela
+│       ├── java/                           # Todos los archivos de prueba
+│       │   ├── allure.properties           # Configuración de Allure
+│       │   ├── karate-config.js            # Configuración mínima (entorno + baseUrl + carga de helpers)
+│       │   ├── logback-test.xml            # Configuración de logs
+│       │   ├── TestRunner.java             # Runner principal para ejecución paralela
 │       │   │
-│       │   ├── users/               # Pruebas de usuarios
-│       │   │   ├── users.feature        # Escenarios CRUD de usuarios
-│       │   │   ├── user-data.json       # Datos de prueba
-│       │   │   └── UsersRunner.java     # Runner individual
+│       │   ├── common/                     # Features reutilizables
+│       │   │   ├── product/                # Reutilizables para productos
+│       │   │   │   ├── list-products.feature
+│       │   │   │   ├── search-product.feature
+│       │   │   │   └── invalid-search.feature
+│       │   │   └── user/                   # Reutilizables para usuarios
+│       │   │       ├── create-user.feature
+│       │   │       ├── update-user.feature
+│       │   │       └── delete-user.feature
 │       │   │
-│       │   └── products/            # Pruebas de productos
-│       │       ├── products.feature     # Escenarios de listado y búsqueda
-│       │       ├── product-data.csv     # Datos de productos
-│       │       └── ProductsRunner.java  # Runner individual
+│       │   ├── data/                       # Datos de prueba centralizados
+│       │   │   ├── user-data.json
+│       │   │   └── product-data.json
+│       │   │
+│       │   ├── schemas/                    # Validación JSON
+│       │   │   └── user-schema.json
+│       │   │
+│       │   ├── utils/                      # Helpers JavaScript
+│       │   │   ├── generateEmail.js
+│       │   │   ├── loadUserData.js
+│       │   │   ├── loadProductData.js
+│       │   │   └── deepCopy.js
+│       │   │
+│       │   ├── users/                      # Pruebas de usuarios
+│       │   │   ├── users.feature           # Escenarios CRUD de usuarios
+│       │   │   └── UsersRunner.java        # Runner individual
+│       │   │
+│       │   └── products/                   # Pruebas de productos
+│       │       ├── products.feature        # Escenarios de listado y búsqueda
+│       │       └── ProductsRunner.java     # Runner individual
 │       │
-│       └── resources/               # (Vacío - config movida a java/)
+│       └── resources/                      # (Vacío - config movida a java/)
 │
-└── target/                          # Directorio de salida Maven
-    ├── karate-reports/              # Reportes HTML generados
-    ├── allure-results/              # Resultados Allure (generados automáticamente)
-    └── allure-report/               # Reporte Allure HTML (generado con mvn allure:report)
+└── target/                                 # Directorio de salida Maven
+    ├── karate-reports/                     # Reportes HTML generados
+    ├── allure-results/                     # Resultados Allure (generados automáticamente)
+    └── allure-report/                      # Reporte Allure HTML (generado con mvn allure:report)
 ```
 
 ## Configuración de la API
@@ -53,15 +76,137 @@ karate-taller/
 La configuración está en `src/test/java/karate-config.js`:
 
 ```javascript
-// URL base de la API
-baseUrl: 'https://automationexercise.com/api'
-
-// Función para generar emails únicos
-generateEmail: function() { ... }
-
-// Datos por defecto para creación de usuarios
-defaultUserData: function() { ... }
+function fn() {
+  var env = karate.env;
+  karate.log('karate.env system property was:', env);
+  if (!env) env = 'dev';
+  
+  var config = {
+    env: env,
+    baseUrl: 'https://automationexercise.com/api'
+  };
+  
+  // Cargar helpers desde utils/
+  config.generateEmail = read('classpath:utils/generateEmail.js')();
+  config.loadUserData = read('classpath:utils/loadUserData.js')();
+  config.loadProductData = read('classpath:utils/loadProductData.js')();
+  config.deepCopy = read('classpath:utils/deepCopy.js')();
+  
+  return config;
+}
 ```
+
+## Arquitectura del Framework
+
+### Separación de Responsabilidades
+- **karate-config.js**: Solo configuración esencial (entorno, baseUrl, carga de helpers)
+- **utils/**: Helpers JavaScript reutilizables
+- **common/**: Features reutilizables por dominio
+- **data/**: Datos de prueba centralizados
+- **schemas/**: Validación JSON opcional
+
+### Flujo de Ejecución
+1. Karate carga `karate-config.js`
+2. Config carga helpers desde `utils/`
+3. Tests usan helpers y llaman features reutilizables
+4. Features reutilizables interactúan con la API
+5. Tests validan respuestas
+
+## Features Reutilizables
+
+### Patrón Utilizado
+Cada feature reutilizable sigue este patrón:
+
+```gherkin
+Feature: [Nombre] reusable action
+
+Scenario: [Descripción]
+  Given url baseUrl
+  And path '[endpoint]'
+  And form field [campo] = [variable]  # Sin #() dentro del feature
+  When method [verb]
+  * def result = response
+```
+
+### Ejemplo: Create User Feature
+```gherkin
+# common/user/create-user.feature
+Feature: Create user reusable action
+
+Scenario: Create user account
+  Given url baseUrl
+  And path 'createAccount'
+  And form field name = userData.name
+  And form field email = userData.email
+  And form field password = userData.password
+  # ... más campos
+  When method post
+  * def result = response
+```
+
+### Llamada desde Tests
+```gherkin
+* def userData = deepCopy(userDataTemplate)
+* set userData.email = generateEmail()
+* def createRes = call read('classpath:common/user/create-user.feature') { userData: '#(userData)' }
+* match createRes.result.responseCode == 201
+```
+
+## Utils (Helpers)
+
+### generateEmail.js
+Genera emails únicos con timestamp:
+```javascript
+function() {
+  return function() {
+    return 'user_' + new Date().getTime() + '@mail.com';
+  }
+}
+```
+
+### loadUserData.js
+Carga datos de usuario desde JSON:
+```javascript
+function() {
+  return function() {
+    return read('classpath:data/user-data.json');
+  }
+}
+```
+
+### loadProductData.js
+Carga datos de producto desde JSON:
+```javascript
+function() {
+  return function() {
+    return read('classpath:data/product-data.json');
+  }
+}
+```
+
+### deepCopy.js
+Realiza copia profunda de objetos:
+```javascript
+function() {
+  return function(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+}
+```
+
+## Escenarios Implementados
+
+### Products (3 escenarios)
+1. **GET productos** - Listar todos los productos (200 OK)
+2. **POST búsqueda válida** - Buscar con parámetro 'top' (200 OK)
+3. **POST búsqueda inválida** - Buscar sin parámetro (400 en body)
+
+### Users (3 escenarios)
+1. **Crear usuario** - POST createAccount (201 Created)
+2. **Actualizar usuario** - PUT updateAccount (200 OK)
+3. **Eliminar usuario** - DELETE deleteAccount (200 OK)
+
+**Total: 6 escenarios** - Todos pasando ✅
 
 ## Ejecución de Pruebas
 
@@ -72,14 +217,14 @@ mvn test
 
 ### Ejecutar pruebas por dominio
 ```bash
-# Solo productos (GET, POST búsqueda)
+# Solo productos
 mvn test -Dtest=ProductsRunner
 
-# Solo usuarios (POST creación, PUT actualización, DELETE eliminación)
+# Solo usuarios
 mvn test -Dtest=UsersRunner
 
-# Ejecutar solo un runner específico
-mvn test -Dtest=TestRunner  # Todos los dominios
+# Ejecutar runner principal (todos los dominios)
+mvn test -Dtest=TestRunner
 ```
 
 ### Ejecutar desde IDE
@@ -106,22 +251,17 @@ mvn test -Dkarate.options="--tags ~@wip"
 mvn test -Dkarate.options="--tags @smoke,@regresion"
 ```
 
-## Escenarios Implementados
-
-### Products (3 escenarios)
-- **GET** productos (listado completo)
-- **POST** búsqueda con parámetro válido
-- **POST** búsqueda sin parámetro (error 400)
-
-### Users (2 escenarios)
-- **POST + PUT**: Crear cuenta y actualizarla
-- **POST + DELETE**: Crear cuenta y eliminarla
-
 ## Archivos de Datos de Prueba
 
-- `users/user-data.json`: Datos genéricos para creación de usuarios
-- `products/product-data.csv`: Ejemplo de productos
-- `common/test-data.json`: Datos compartidos entre dominios
+### Organización Centralizada
+- **`data/user-data.json`**: Datos genéricos para creación de usuarios
+- **`data/product-data.json`**: Datos de productos para búsqueda
+- **`schemas/user-schema.json`**: JSON schema para validación
+
+### Generación Dinámica
+- Los emails se generan únicos usando `generateEmail()`
+- Se usa `deepCopy()` para evitar mutaciones de datos base
+- Los datos se cargan automáticamente con `loadUserData()` y `loadProductData()`
 
 ## Reportes
 
@@ -159,14 +299,18 @@ Los reportes Allure incluyen detalles de pasos, attachments, tiempos de ejecuci�
 ## Personalización
 
 ### Agregar nuevo dominio
-1. Crear carpeta en `src/test/java/nuevo-dominio/`
-2. Crear `nuevo-dominio.feature` con escenarios
-3. Crear `NuevoDominioRunner.java`
-4. Actualizar `TestRunner.java` para incluir `classpath:nuevo-dominio`
+1. Crear carpeta en `src/test/java/common/nuevo-dominio/` para features reutilizables
+2. Crear features siguiendo el patrón (Given url baseUrl, form fields, * def result = response)
+3. Crear `nuevo-dominio.feature` en `src/test/java/nuevo-dominio/` con escenarios
+4. Crear `NuevoDominioRunner.java` en el directorio del dominio
+5. Actualizar `TestRunner.java` para incluir `classpath:nuevo-dominio`
+6. Agregar datos de prueba en `data/` si es necesario
+7. Agregar helpers en `utils/` si se necesitan nuevas funciones
 
 ### Modificar datos de prueba
-- Editar archivos JSON/CSV en cada directorio de dominio
-- Los datos se cargan automáticamente si se siguen las convenciones
+- Editar archivos JSON en `data/`
+- Los datos se cargan automáticamente con las funciones helpers
+- Usar `deepCopy()` para crear variaciones de datos base
 
 ## Comandos Maven Útiles
 
@@ -174,6 +318,8 @@ Los reportes Allure incluyen detalles de pasos, attachments, tiempos de ejecuci�
 mvn clean test        # Limpiar y ejecutar pruebas
 mvn test-compile      # Solo compilar pruebas
 mvn test -X           # Ejecutar con debug
+mvn allure:report     # Generar reporte Allure
+mvn surefire-report:report  # Generar reporte HTML de Surefire
 ```
 
 ## Recursos
@@ -181,10 +327,12 @@ mvn test -X           # Ejecutar con debug
 - [API AutomationExercise](https://automationexercise.com/api_list)
 - [Documentación Karate](https://karatelabs.github.io/karate/)
 - [Sintaxis Gherkin](https://karatelabs.github.io/karate/#karate-language)
+- [Karate DSL](https://github.com/karatelabs/karate)
 
 ## Notas para el Taller
 
 - La estructura está diseñada para ser educativa y escalable
-- Los componentes `auth/` y `common/` son placeholders para extender
 - Cada dominio es independiente pero comparte configuración global
 - Los datos de prueba se generan dinámicamente para evitar conflictos
+- La arquitectura modular permite fácil extensión con nuevos dominios
+- Los features reutilizables promueven el principio DRY (Don't Repeat Yourself)
