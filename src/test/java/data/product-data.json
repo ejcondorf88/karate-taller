@@ -1,0 +1,20 @@
+{
+  "searchTerm": "top",
+  "invalidSearchTerm": "xyz123notfound",
+  "sampleProducts": [
+    {
+      "id": 1,
+      "name": "Blue Top",
+      "price": "Rs. 500",
+      "brand": "Polo",
+      "category": "Tops"
+    },
+    {
+      "id": 2,
+      "name": "Men Tshirt",
+      "price": "Rs. 400",
+      "brand": "H&M",
+      "category": "Tshirts"
+    }
+  ]
+}
