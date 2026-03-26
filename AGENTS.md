@@ -39,6 +39,15 @@ mvn allure:serve
 
 # Generar reporte HTML de Surefire (alternativo)
 mvn surefire-report:report
+
+# Ejecutar pruebas con Tags específicos
+mvn test -Dkarate.options="--tags @smoke"              # Ejecutar solo pruebas smoke
+mvn test -Dkarate.options="--tags @users"              # Ejecutar solo pruebas de usuarios
+mvn test -Dkarate.options="--tags @products"           # Ejecutar solo pruebas de productos
+mvn test -Dkarate.options="--tags @post"               # Ejecutar solo pruebas POST
+mvn test -Dkarate.options="--tags @regresion"          # Ejecutar pruebas de regresión
+mvn test -Dkarate.options="--tags ~@wip"               # Excluir pruebas en desarrollo (wip)
+mvn test -Dkarate.options="--tags @smoke,@products"    # Combinar tags (OR lógico)
 ```
 
 ### Ejecución de Features Individuales
@@ -79,6 +88,22 @@ mvn surefire-report:report
   - Usar `karate-config.js` para datos específicos del entorno
   - Generar datos únicos para pruebas que crean/eliminan recursos
   - Almacenar datos de prueba en archivos JSON/CSV dentro de cada directorio de dominio
+- **Uso de Tags**:
+  - **Importancia**: Permiten organizar y ejecutar selectivamente escenarios de prueba.
+  - **Tags estándar del proyecto**:
+    - **Por Dominio**: `@users`, `@products`
+    - **Por Método HTTP**: `@get`, `@post`, `@put`, `@delete`
+    - **Por Tipo de Prueba/Ciclo de Ejecución**:
+      - `@smoke`: Pruebas rápidas, críticas, que verifican la funcionalidad básica del sistema.
+      - `@regresion`: Pruebas más exhaustivas que cubren funcionalidades detalladas.
+      - `@crud`: Pruebas que cubren el ciclo completo de creación, lectura, actualización y eliminación de un recurso.
+    - **Tags de Estado**:
+      - `@wip`: (Work In Progress) para escenarios en desarrollo que deben ser excluidos de las ejecuciones principales.
+      - `@ignore`: Alternativa a `@wip` o para pruebas deshabilitadas temporalmente.
+  - **Ejemplo de aplicación**:
+    - A nivel de Feature: `@users Feature: ...`
+    - A nivel de Scenario: `@post @put @regresion Scenario: ...`
+  - **Ejecución con Tags**: Usar la opción `-Dkarate.options="--tags <tag_name>"` al ejecutar pruebas con Maven.
 
 ### Archivos de Configuración
 - **karate-config.js**: Ubicado en `src/test/java/`

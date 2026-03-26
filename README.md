@@ -85,6 +85,27 @@ mvn test -Dtest=TestRunner  # Todos los dominios
 ### Ejecutar desde IDE
 Clic derecho en `TestRunner.java`, `ProductsRunner.java` o `UsersRunner.java` → Run/Debug
 
+### Ejecutar pruebas con Tags
+Las pruebas están organizadas con tags para ejecución selectiva:
+```bash
+# Ejecutar pruebas críticas (smoke)
+mvn test -Dkarate.options="--tags @smoke"
+
+# Ejecutar solo pruebas de un dominio
+mvn test -Dkarate.options="--tags @users"
+mvn test -Dkarate.options="--tags @products"
+
+# Ejecutar pruebas por método HTTP
+mvn test -Dkarate.options="--tags @get"
+mvn test -Dkarate.options="--tags @post"
+
+# Excluir pruebas en desarrollo
+mvn test -Dkarate.options="--tags ~@wip"
+
+# Combinar tags (OR lógico)
+mvn test -Dkarate.options="--tags @smoke,@regresion"
+```
+
 ## Escenarios Implementados
 
 ### Products (3 escenarios)
