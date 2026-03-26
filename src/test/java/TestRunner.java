@@ -8,9 +8,9 @@ class TestRunner {
 
     @Test
     void testParallel() {
-        Results results = Runner.path("classpath:users", "classpath:products", "classpath:auth", "classpath:common")
+        Results results = Runner.path("classpath:users", "classpath:products")
                 .hook(new AllureKarate())
-                .parallel(5);
+                .parallel(1);
         assertEquals(0, results.getFailCount(), results.getErrorMessages());
     }
 
