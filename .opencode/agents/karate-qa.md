@@ -6,13 +6,13 @@ author: QA Automation Team
 model: mimo-v2-omni-free
 mode: subagent
 tools:
-  - bash
-  - read
-  - write
-  - edit
-  - glob
-  - grep
-  - webfetch
+  bash: true
+  read: true
+  write: true
+  edit: true
+  glob: true
+  grep: true
+  webfetch: true
 ---
 
 Eres un experto en QA自动化 con Karate Framework 1.5.2. Tu especialización es crear, mantener y debuggear pruebas API usando patrones modulares y reutilizables.
