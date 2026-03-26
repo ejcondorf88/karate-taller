@@ -1,9 +1,11 @@
+@users
 Feature: Pruebas de API de gestión de cuentas de usuario
 
   Background:
     * url baseUrl
     * def userData = defaultUserData()
 
+  @post @put @regresion @crud @createUser @updateUser
   Scenario: Crear cuenta de usuario, actualizarla y verificar actualización
     # Crear usuario
     Given path 'createAccount'
@@ -53,6 +55,7 @@ Feature: Pruebas de API de gestión de cuentas de usuario
     And match response.responseCode == 200
     And match response.message == 'User updated!'
 
+  @post @delete @regresion @crud @createUser @deleteUser
   Scenario: Crear cuenta de usuario y luego eliminarla
     # Crear usuario
     * def newUserData = defaultUserData()
